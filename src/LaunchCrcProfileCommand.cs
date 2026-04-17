@@ -37,12 +37,17 @@ internal sealed partial class LaunchCrcProfileCommand : InvokableCommand
 
         try
         {
-            Process.Start(
+            var process = Process.Start(
                 new ProcessStartInfo
                 {
                     FileName = crcPath,
                     Arguments = $"--profile={_profile.Id}",
                 });
+
+            if (process is null)
+            {
+                return ShowError($"CRC did not start for profile '{_profile.Name}'.");
+            }
 
             return CommandResult.Dismiss();
         }
