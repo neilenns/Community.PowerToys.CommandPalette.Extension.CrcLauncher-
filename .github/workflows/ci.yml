@@ -1,0 +1,40 @@
+name: CI build
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        include:
+          - architecture: x64
+            rid: win-x64
+            platform: x64
+          - architecture: arm64
+            rid: win-arm64
+            platform: ARM64
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "9.0.x"
+
+      - name: Restore
+        run: dotnet restore ./src/Community.PowerToys.CommandPalette.Extension.CrcLauncher.csproj
+
+      - name: Build (${{ matrix.architecture }})
+        run: dotnet build ./src/Community.PowerToys.CommandPalette.Extension.CrcLauncher.csproj -c Release -p:Platform=${{ matrix.platform }} --no-restore
+
+      - name: Publish (${{ matrix.architecture }})
+        run: dotnet publish ./src/Community.PowerToys.CommandPalette.Extension.CrcLauncher.csproj -c Release -r ${{ matrix.rid }} -p:Platform=${{ matrix.platform }} --self-contained false -p:PublishDir=./artifacts/publish/${{ matrix.architecture }}/ --no-build
