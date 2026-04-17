@@ -1,0 +1,49 @@
+name: Release application
+
+on:
+  release:
+    types: [created]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        include:
+          - architecture: x64
+            rid: win-x64
+            platform: x64
+          - architecture: arm64
+            rid: win-arm64
+            platform: ARM64
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Get the release version
+        id: get_version
+        uses: dhkatz/get-version-action@v3.0.0
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "9.0.x"
+
+      - name: Restore
+        run: dotnet restore ./src/Community.PowerToys.CommandPalette.Extension.CrcLauncher.csproj
+
+      - name: Publish (${{ matrix.architecture }})
+        run: dotnet publish ./src/Community.PowerToys.CommandPalette.Extension.CrcLauncher.csproj -c Release -r ${{ matrix.rid }} -p:Platform=${{ matrix.platform }} -p:Version=${{ steps.get_version.outputs.version-without-v }} --self-contained false -p:PublishDir=./artifacts/publish/${{ matrix.architecture }}/ --no-restore
+
+      - name: Zip release artifact (${{ matrix.architecture }})
+        shell: pwsh
+        run: Compress-Archive -Path ./artifacts/publish/${{ matrix.architecture }}/* -DestinationPath ./Community.PowerToys.CommandPalette.Extension.CrcLauncher-${{ steps.get_version.outputs.version-without-v }}-${{ matrix.architecture }}.zip
+
+      - name: Upload release assets
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ./Community.PowerToys.CommandPalette.Extension.CrcLauncher-${{ steps.get_version.outputs.version-without-v }}-${{ matrix.architecture }}.zip
