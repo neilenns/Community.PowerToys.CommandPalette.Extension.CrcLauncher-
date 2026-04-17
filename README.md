@@ -1,0 +1,1 @@
+# Community.PowerToys.CommandPalette.Extension.CrcLauncher-
